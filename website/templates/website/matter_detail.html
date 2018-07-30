@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %} Details {% endblock title %}
+{% load static %}
+
+{% block body %}
+<div class="col-md-12">
+  <br>
+  <h2 class="text-center">{{ matter }}</h2>
+  <br>
+
+  <div class="col-md-12 row">
+    <div class="col-md-6">
+      <table class="table table-striped table-bordered">
+        <tr>
+          <td>File Number</td>
+          <td>{{ matter.file_number }}</td>
+        </tr>
+        <tr>
+          <td>Invoice Date</td>
+          <td>{{ matter.invoice_date }}</td>
+        </tr>
+        <tr>
+          <td>Invoice Number</td>
+          <td>{{ matter.invoice_number }}</td>
+        </tr>
+        <tr>
+          <td>Fee Choice</td>
+          <td>{{ matter.fee_choice }}</td>
+        </tr>
+        <tr>
+          <td>Trust</td>
+          <td>{{ matter.trust }}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="col-md-6">
+      <table class="table table-striped table-bordered">
+        <tr>
+          <td>Client</td>
+          <td>{{ matter.client }}</td>
+        </tr>
+        <tr>
+          <td>Address</td>
+          <td>{{ matter.client.address }}</td>
+        </tr>
+        <tr>
+          <td>Lawyer</td>
+          <td>{{ matter.lawyer }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="col-md-12">
+    <a href="{% url 'generate-invoice' matter.id %}">Generate Invoice</a><br>
+  </div>
+
+  <!-- SERVICES -->
+  <div class="col-md-12">
+    <h2 class="text-center">Services</h2>
+    {% if services %}
+      <table class="table table-striped table-bordered">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Hours</th>
+            <th>Amount</th>
+            <th>Lawyer</th>
+          </tr>
+        </thead>
+        {% for service in services %}
+          <tr>
+            <td>{{ service.date }}</td>
+            <td>{{ service.description }}</td>
+            <td>{{ service.hours }}</td>
+            <td>{{ service.amount }}</td>
+            <td>{{ service.lawyer }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% endif %}
+    <p class="text-center">Total Cost: {{ services_cost.total_cost }}<br>
+      <a href="{% url 'service-new' matter.id %}">Add service</a>
+    </p>
+  </div>
+
+  <!-- DISCOUNTS -->
+  <div class="col-md-12">
+    <h2 class="text-center">Discounts</h2>
+    {% if discounts %}
+      <table class="table table-striped table-bordered">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Amount</th>
+            <th>Rate</th>
+          </tr>
+        </thead>
+        {% for discount in discounts %}
+          <tr>
+            <td>{{ discount.name }}</td>
+            <td>{{ discount.amount }}</td>
+            <td>{{ discount.discount_choice }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% endif %}
+    <p class="text-center">
+      <a href="{% url 'discount-new' matter.id %}">Add discount</a><br>
+    </p>
+  </div>
+
+  <!-- DISBURSEMENTS -->
+  <div class="col-md-12">
+    <h2 class="text-center">Disbursements</h2>
+    {% if disbursements %}
+      <table class="table table-striped table-bordered">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Amount</th>
+            <th>Taxable/Non-Taxable</th>
+          </tr>
+        </thead>
+        {% for disbursement in disbursements %}
+        <tr>
+          <td>{{ disbursement.date }}</td>
+          <td>{{ disbursement.description }}</td>
+          <td>{{ disbursement.amount }}</td>
+          <td>{{ disbursement.tax_choice }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    {% endif %}
+    <p class="text-center">Total Cost: {{ disbursements_cost.total_cost }}<br>
+      <a href="{% url 'disbursement-new' matter.id %}">Add disbursement</a>
+    </p>
+  </div>
+</div>
+{% endblock body %}

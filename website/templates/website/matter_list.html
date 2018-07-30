@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %} Matters {% endblock title %}
+{% load static %}
+
+{% block body %}
+  <div class="container-fluid">
+    <br>
+    <h1 class="text-center">Matters</h1>
+    <br>
+    <table class="table table-striped">
+      <thead>
+        <th>Summary</th>
+        <th>File Number</th>
+        <th>Invoice Date</th>
+        <th>Invoice Number</th>
+        <th>Trust</th>
+        <th>Client</th>
+        <th>Lawyer</th>
+        <th>Actions</th>
+      </thead>
+      {% for matter in matter_list %}
+      <tr>
+        <td>{{ matter.summary }}</td>
+        <td>{{ matter.file_number }}</td>
+        <td>{{ matter.invoice_date }}</td>
+        <td>{{ matter.invoice_number }}</td>
+        <td>{{ matter.trust }}</td>
+        <td>{{ matter.client.name }}</td>
+        <td>{{ matter.lawyer.name }}</td>
+        <td><a href="{% url 'matter-detail' matter.id %}">View</a></td>
+      </tr>
+      {% endfor %}
+    </table>
+    <a href="{% url 'matter-new' %}">New Matter</a>
+  </div>
+{% endblock body %}
