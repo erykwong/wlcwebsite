@@ -81,7 +81,7 @@ def generate_invoice(request, matter_id):
     im = Image(logo, 2*inch, 2*inch, hAlign='LEFT')
 
     # Company Information Header
-    company_name = "WINRIGHT LAW CORPORATION"
+    company_name = "<b>WINRIGHT LAW CORPORATION</b>"
     company_info = ["621 - 550 West Broadway | Vancouver, BC | V5Z 0E9",
                     "t: 604.559.2529 f: 604.559.2530",
                     "info@wrlaw.ca | winrightlaw.com"]
@@ -133,7 +133,7 @@ def generate_invoice(request, matter_id):
         [file_num_text, file_num_data, date_text, date_data],
         [invoice_num_text, invoice_num_data, due_date_text, due_date_data],
     ]
-    tbl_invoice = Table(invoice_data, colWidths=[100, 230, 100, 140])
+    tbl_invoice = Table(invoice_data, colWidths=[95, 230, 100, 140])
     Story.append(tbl_invoice)
     Story.append(Spacer(1, 12))
 
@@ -152,9 +152,9 @@ def generate_invoice(request, matter_id):
     Story.append(Paragraph('<font size=12>%s</font>' % matter.summary, style_left))
 
     # Draw line
-    d = Drawing(100, 1)
-    d.add(Line(0, 0, 550, 0))
-    Story.append(d)
+    line = Drawing(100, 1)
+    line.add(Line(0, 0, 550, 0))
+    Story.append(line)
     Story.append(Spacer(1, 12))
 
     date_heading_text = Paragraph('<font size=12><b>%s</b></font' % 'DATE', style_left)
@@ -163,6 +163,9 @@ def generate_invoice(request, matter_id):
     lawyer_heading_text = Paragraph('<font size=12><b>%s</b></font' % 'LAWYER', style_left)
 
     # Services
+    services_header = Paragraph('<font size=12><b>%s</b></font>' % 'SERVICES', style_left)
+    Story.append(services_header)
+
     services_data = [
         [date_heading_text, desc_heading_text, amt_heading_text, lawyer_heading_text]
     ]
@@ -174,18 +177,93 @@ def generate_invoice(request, matter_id):
 
         service_date = Paragraph('<font size=12>%s</font>' % service.date.strftime("%m/%d/%y"), style_left)
         service_desc = Paragraph('<font size=12>%s</font>' % service.description, style_left)
-        service_amt = Paragraph('<font size=12>%s</font>' % str(service.amount), style_left)
+        service_amt = Paragraph('<font size=12>%s</font>' % str(service.amount), style_right)
         lawyer = Paragraph('<font size=12>%s</font>' % service.lawyer.name, style_left)
         services_data.append([service_date, service_desc, service_amt, lawyer])
 
-    tbl_service = Table(services_data, colWidths=[100, 300, 70, 100])
-    Story.append(tbl_service)
+    fee_total_text = Paragraph('<font size=12><b>%s</b></font' % 'Fee Total: ', style_right)
+    gst_fee_text = Paragraph('<font size=12>%s</font' % 'GST on Fees: ', style_right)
+    pst_fee_text = Paragraph('<font size=12>%s</font' % 'PST on Fees: ', style_right)
+    fee_total_with_taxes_text = Paragraph('<font size=12><b>%s</b></font' % 'Fee Total with Taxes: ', style_right)
 
-    # TODO add calculations
+    gst_fee = total_service_cost * Decimal(gst_percentage)
+    pst_fee = total_service_cost * Decimal(pst_percentage)
+    total_cost_with_fee = total_service_cost + gst_fee + pst_fee
+
+    service_cost = Paragraph('<font size=12>%s</font' % str(total_service_cost), style_right)
+    gst_cost = Paragraph('<font size=12>%s</font' % str(format(gst_fee, '.2f')), style_right)
+    pst_cost = Paragraph('<font size=12>%s</font' % str(format(pst_fee, '.2f')), style_right)
+    total_cost = Paragraph('<font size=12>%s</font' % str(format(total_cost_with_fee, '.2f')), style_right)
+
+    services_data.append(["", fee_total_text, service_cost, ""])
+    services_data.append(["", gst_fee_text, gst_cost, ""])
+    services_data.append(["", pst_fee_text, pst_cost, ""])
+    services_data.append(["", fee_total_with_taxes_text, total_cost, ""])
+
+    tbl_service = Table(services_data, colWidths=[95, 300, 70, 100])
+    Story.append(tbl_service)
+    Story.append(Spacer(1, 12))
+
+    # Discounts
+    discounts_header = Paragraph('<font size=12><b>%s</b></font>' % 'DISCOUNTS', style_left)
+    Story.append(discounts_header)
+
+    date_heading_text = Paragraph('<font size=12><b>%s</b></font' % 'DATE', style_left)
+    desc_heading_text = Paragraph('<font size=12><b>%s</b></font' % 'DESCRIPTION', style_left)
+    amt_heading_text = Paragraph('<font size=12><b>%s</b></font' % 'AMOUNT', style_left)
+    discount_heading_text = Paragraph('<font size=12><b>%s</b></font' % 'DISCOUNT', style_left)
+
+    disc_data = [
+        [date_heading_text, desc_heading_text, amt_heading_text, discount_heading_text]
+    ]
+
+    discounts = Discount.objects.filter(matter_id=matter_id)
+    total_percentage_discount = 0
+    total_flat_discount = 0
+    for discount in discounts:
+        if discount.discount_choice == "Percentage":
+            total_percentage_discount += discount.amount
+        elif discount.discount_choice == "Flat":
+            total_flat_discount += discount.amount
+
+        discount_date = Paragraph('<font size=12>%s</font>' % discount.date.strftime("%m/%d/%y"), style_left)
+        discount_name = Paragraph('<font size=12>%s</font>' % discount.name, style_left)
+        discount_amt = Paragraph('<font size=12>%s</font>' % str(discount.amount), style_right)
+        discount_type = Paragraph('<font size=12>%s</font>' % discount.discount_choice, style_left)
+        disc_data.append([discount_date, discount_name, discount_amt, discount_type])
+
+    percentage_off = total_cost_with_fee * (total_percentage_discount / 100)
+    cost_after_discounts = total_cost_with_fee - percentage_off - total_flat_discount
+
+    discount_percentage_text = Paragraph('<font size=12>%s</font' % 'Percent Discount:', style_right)
+    discount_flat_text = Paragraph('<font size=12>%s</font' % 'Flat Discount:', style_right)
+    total_after_text = Paragraph('<font size=12><b>%s</b></font' % 'Cost After Discount:', style_right)
+
+    discount_percentage = Paragraph('<font size=12>%s</font' % str(total_percentage_discount), style_right)
+    discount_flat = Paragraph('<font size=12>%s</font' % str(total_flat_discount), style_right)
+    total_after_discount = Paragraph('<font size=12>%s</font' % str(format(cost_after_discounts, '.2f')), style_right)
+
+    disc_data.append(["", discount_percentage_text, discount_percentage, ""])
+    disc_data.append(["", discount_flat_text, discount_flat, ""])
+    disc_data.append(["", total_after_text, total_after_discount, ""])
+
+    tbl_disc = Table(disc_data, colWidths=[95, 300, 70, 100])
+    Story.append(tbl_disc)
     Story.append(Spacer(1, 12))
 
     # Disbursements
-    disb_data = []
+    disbursement_header = Paragraph('<font size=12><b>%s</b></font>' % 'DISBURSEMENTS', style_left)
+    Story.append(disbursement_header)
+
+    date_heading_text = Paragraph('<font size=12><b>%s</b></font' % 'DATE', style_left)
+    desc_heading_text = Paragraph('<font size=12><b>%s</b></font' % 'DESCRIPTION', style_left)
+    amt_heading_text = Paragraph('<font size=12><b>%s</b></font' % 'AMOUNT', style_left)
+    taxable_heading_text = Paragraph('<font size=12><b>%s</b></font' % 'TAX', style_left)
+
+    disb_data = [
+        [date_heading_text, desc_heading_text, amt_heading_text, taxable_heading_text]
+    ]
+
     total_disbursement_cost = 0
     disbursements = Disbursement.objects.filter(matter_id=matter_id)
 
@@ -193,13 +271,13 @@ def generate_invoice(request, matter_id):
         total_disbursement_cost += disbursement.amount
         disb_date = Paragraph('<font size=12>%s</font>' % disbursement.date.strftime("%m/%d/%y"), style_left)
         disb_desc = Paragraph('<font size=12>%s</font>' % disbursement.description, style_left)
-        disb_amt = Paragraph('<font size=12>%s</font>' % str(disbursement.amount), style_left)
+        disb_amt = Paragraph('<font size=12>%s</font>' % str(disbursement.amount), style_right)
         disb_tax_choice = Paragraph('<font size=12>%s</font>' % disbursement.tax_choice, style_left)
         disb_data.append([disb_date, disb_desc, disb_amt, disb_tax_choice])
 
         # TODO Determine if TAX_CHOICE is NON-TAXABLE, TAXABLE(GST+PST), GST only, PST only
 
-    tbl_disb = Table(disb_data, colWidths=[100, 300, 70, 100])
+    tbl_disb = Table(disb_data, colWidths=[95, 300, 70, 100])
     Story.append(tbl_disb)
 
     # TODO add calculations

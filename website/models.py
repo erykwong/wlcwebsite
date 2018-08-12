@@ -87,7 +87,11 @@ class Service(models.Model):
 
 
 class Disbursement(models.Model):
-    TAX_CHOICES = ((u'Taxable', 'Taxable'), (u'Non-Taxable', 'Non-Taxable'))
+    TAX_CHOICES = (
+        (u'Taxable', 'Taxable'),
+        (u'Non-Taxable', 'Non-Taxable'),
+        (u'GST', 'GST'),
+        (u'PST', 'PST'))
     date = models.DateTimeField()
     description = models.CharField(max_length=255)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -104,6 +108,7 @@ class Disbursement(models.Model):
 
 class Discount(models.Model):
     DISCOUNT_CHOICES = ((u'Percentage', 'Percentage'), (u'Flat', 'Flat'))
+    date = models.DateTimeField(auto_now_add=True)
     name = models.CharField(max_length=255)
     amount = models.DecimalField(max_digits=10, decimal_places=2, null=True)
     discount_choice = models.CharField("Percentage of Flat?", max_length=20, choices=DISCOUNT_CHOICES)
